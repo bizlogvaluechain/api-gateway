@@ -7,8 +7,24 @@ spring:
           predicates:
             - Path=/api/v1/mds/**
 
+  gateway:
+    excludedURLsNew: /api/v1/validateToken
+
+server:
+  port: 8082
+  compression:
+    enabled: false
+  undertow:
+    threads:
+      worker: 64
+      io: 4
 #security:
 #  authentication:
 #    excluded-paths:
 #      - /login
 #      - /register
+
+#  aws:
+#    accessKey: your-access-key
+#    secretKey: your-secret-key
+#    region: your-region
