@@ -19,8 +19,7 @@ public class UserResponse {
     private String userName;
     private String clientId;
     private Boolean status;
-    private Set<String> roles;
-
+    private List<UserRole> roles;
     private List<String> permissions;
 
 

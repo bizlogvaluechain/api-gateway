@@ -1,6 +1,5 @@
 package com.bizzlog.gateway.config;
 
-import com.bizzlog.gateway.filters.AuthenticationPrefilter;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
