@@ -61,7 +61,7 @@ public class AuthenticationPrefilter extends AbstractGatewayFilterFactory<Authen
 
             if(isSecured.test(request)) {
                 return webClientBuilder.build().get()
-                        .uri("http://localhost:8080/api/v1/validateToken")
+                        .uri("http://localhost:8081/api/v1/validateToken")
                         .header(SecurityConstants.HEADER, bearerToken)
                         .retrieve().bodyToMono(UserResponse.class)
                         .map(response -> {
