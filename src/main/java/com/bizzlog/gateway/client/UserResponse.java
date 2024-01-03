@@ -1,19 +1,16 @@
 package com.bizzlog.gateway.client;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 import java.util.List;
-import java.util.Set;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
 public class UserResponse {
-
     private Long id;
     private String userId;
     private String userName;
@@ -21,8 +18,4 @@ public class UserResponse {
     private Boolean status;
     private List<UserRole> roles;
     private List<String> permissions;
-
-
-
-
 }

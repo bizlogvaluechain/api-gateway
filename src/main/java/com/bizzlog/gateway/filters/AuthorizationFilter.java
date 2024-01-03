@@ -13,7 +13,6 @@ import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -43,6 +42,7 @@ public class AuthorizationFilter implements GlobalFilter {
 //		excludedUrls = Arrays.asList(urlsStrings);
 		ServerHttpRequest req = exchange.getRequest();
 		log.info("**************************************************************************");
+		log.info("inside auth filter");
 		log.info("URL is - " + req.getURI().getPath());
 		if(isSecured.test(req)) {
 			try {

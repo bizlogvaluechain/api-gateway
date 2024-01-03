@@ -23,7 +23,6 @@ import reactor.core.publisher.Mono;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -36,10 +35,12 @@ public class AuthPreFilter   implements GlobalFilter {
     @Qualifier("excludedUrls")
     List<String> excludedUrls;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-    public AuthPreFilter(WebClient.Builder webClientBuilder) {
+
+    private final ObjectMapper objectMapper;
+
+    public AuthPreFilter(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
         this.webClientBuilder = webClientBuilder;
+        this.objectMapper = objectMapper;
     }
 
     @Override
