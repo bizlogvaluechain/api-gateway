@@ -54,7 +54,7 @@ public class AuthorizationTokenFilter implements GlobalFilter, Ordered {
 
     private boolean isLoginOrRegistrationPath(String path) {
         // Define paths for login and registration APIs
-        return path.contains("/login") || path.contains("/register");
+        return path.contains("/login") || path.contains("/register")||path.contains("/refreshToken");
     }
 
     @Override

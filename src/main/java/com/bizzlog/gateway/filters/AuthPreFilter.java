@@ -125,7 +125,7 @@ public class AuthPreFilter   implements GlobalFilter {
 
     private boolean isLoginOrRegistrationPath(String path) {
         // Define paths for login and registration APIs
-        return path.contains("/login") || path.contains("/register");
+        return path.contains("/login") || path.contains("/register")||path.contains("/refreshToken");
     }
 
     public Predicate<ServerHttpRequest> isSecured = request -> excludedUrls.stream().noneMatch(uri -> request.getURI().getPath().contains(uri));
