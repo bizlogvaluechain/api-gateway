@@ -1,4 +1,4 @@
-package dev.bizzlog.gatewayservice;
+package com.bizzlog.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

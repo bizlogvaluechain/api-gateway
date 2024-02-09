@@ -2,7 +2,59 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: mds-route
-          uri: http://localhost:8081
+        - id: iam-route
+          uri: http://localhost:8081/
           predicates:
-            - Path=/mds/**
+            - Path=/api/v1/auth/**
+        - id: cos-route
+          uri: http://localhost:8084/
+          predicates:
+            - Path=/api/v1/cos/**
+        - id: mds-route
+          uri: http://localhost:8082/
+          predicates:
+            - Path=/api/v1/mds/**
+        - id: tcs-route
+          uri: http://localhost:8083/
+          predicates:
+            - Path=/api/v1/tms/**
+        - id: ums-route
+          uri: http://localhost:8085/
+          predicates:
+            - Path=/api/v1/ums/**
+        - id: tms-route
+          uri: http://localhost:8086/
+          predicates:
+            - Path=/api/v1/tms/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedHeaders:
+              - "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+  gateway:
+    excludedURLsNew: /api/v1/validateToken
+
+server:
+  port: 8080
+  compression:
+    enabled: false
+  undertow:
+    threads:
+      worker: 64
+      io: 4
+#security:
+#  authentication:
+#    excluded-paths:
+#      - /login
+#      - /register
+
+#  aws:
+#    accessKey: your-access-key
+#    secretKey: your-secret-key
+#    region: your-region
