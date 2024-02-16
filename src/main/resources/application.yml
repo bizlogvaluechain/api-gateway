@@ -6,6 +6,7 @@ spring:
           uri: http://localhost:8081/
           predicates:
             - Path=/api/v1/auth/**
+            - Path=/api/v1/users/**
         - id: cos-route
           uri: http://localhost:8084/
           predicates:
@@ -58,3 +59,6 @@ server:
 #    accessKey: your-access-key
 #    secretKey: your-secret-key
 #    region: your-region
+resilience4j:
+  circuitbreaker:
+    enabled=true:
