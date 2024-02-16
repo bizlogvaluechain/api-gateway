@@ -2,14 +2,10 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: iam-auth-route
+        - id: iam-route
           uri: http://localhost:8081/
           predicates:
             - Path=/api/v1/auth/**
-        - id: iam-users-route
-          uri: http://localhost:8081/
-          predicates:
-            - Path=/api/v1/users/**
         - id: cos-route
           uri: http://localhost:8084/
           predicates:
