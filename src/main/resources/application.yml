@@ -48,6 +48,14 @@ server:
     threads:
       worker: 64
       io: 4
+  tomcat:
+    basedir: ./log
+    accesslog:
+      directory: .
+      enabled: true
+      suffix: '.log'
+      prefix: 'api-gateway-log'
+      file-date-format: '.yyyy-MM-dd'
 
 logging:
   level:
