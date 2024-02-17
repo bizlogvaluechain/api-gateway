@@ -48,6 +48,10 @@ server:
     threads:
       worker: 64
       io: 4
+
+logging:
+  level:
+    root: "INFO"
 #security:
 #  authentication:
 #    excluded-paths:
@@ -58,6 +62,3 @@ server:
 #    accessKey: your-access-key
 #    secretKey: your-secret-key
 #    region: your-region
-resilience4j:
-  circuitbreaker:
-    enabled=true:
