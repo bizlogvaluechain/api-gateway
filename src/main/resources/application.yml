@@ -48,6 +48,18 @@ server:
     threads:
       worker: 64
       io: 4
+  tomcat:
+    basedir: ./log
+    accesslog:
+      directory: .
+      enabled: true
+      suffix: '.log'
+      prefix: 'api-gateway-log'
+      file-date-format: '.yyyy-MM-dd'
+
+logging:
+  level:
+    root: "INFO"
 #security:
 #  authentication:
 #    excluded-paths:
@@ -58,6 +70,3 @@ server:
 #    accessKey: your-access-key
 #    secretKey: your-secret-key
 #    region: your-region
-resilience4j:
-  circuitbreaker:
-    enabled=true:
