@@ -12,6 +12,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,8 @@ public class AuthPreFilter   implements GlobalFilter {
 
     @Autowired
     private final WebClient.Builder webClientBuilder;
+
+    private final List<String> fePaths=List.of("api/v1/auth","api/v1/users","api/v1/cos","api/v1/tcs");
 
     @Autowired
     @Qualifier("excludedUrls")
@@ -58,7 +61,6 @@ public class AuthPreFilter   implements GlobalFilter {
         }
 
         if(isSecured.test(request)) {
-            log.info("************************ inside if **************************************");
 
             return webClientBuilder.build().post()
                     .uri("http://localhost:8081/api/v1/auth/validateToken")
@@ -66,8 +68,11 @@ public class AuthPreFilter   implements GlobalFilter {
                     .retrieve()
                     .bodyToMono(UserResponse.class)
                     .map(response -> {
-                        log.info("************************ inside map **************************************");
                         log.info(response.toString());
+                        if (!isPathAllowedForRoles(requestPath, response.getProfile().getProfile())) {
+                            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                            throw new WebClientResponseException(HttpStatusCode.valueOf(405),"ACCESS FORBIDDEN FOR USER",null,null,null,null);
+                        }
                         exchange.getRequest().mutate().header("username", response.getUserName());
 //                        exchange.getRequest().mutate().header(SecurityConstants.ROLE, response.getRoles().stream().map(role->{
 //                            return role.getName();
@@ -75,25 +80,23 @@ public class AuthPreFilter   implements GlobalFilter {
 
 //                            exchange.getRequest().mutate().header("authorities", response.getAuthorities().stream().map(Authorities::getAuthority).reduce("", (a, b) -> a + "," + b));
 //                            exchange.getRequest().mutate().header("auth-token", response.getToken());
-                        log.info("************************ inside map 2 **************************************");
                         return exchange;
                     }).flatMap(chain::filter).onErrorResume(error -> {
                         log.info("Error Happened");
                         HttpStatus errorCode = null;
                         String errorMsg = "";
-                        log.info("************************ 1st point in error **************************************");
                         if (error instanceof WebClientResponseException) {
-                            log.info("************************ 2nd point in error **************************************");
-
                             WebClientResponseException webCLientException = (WebClientResponseException) error;
-                            errorCode =  HttpStatus.BAD_GATEWAY;//webCLientException.getStatusCode();
-                            errorMsg = webCLientException.getStatusText();
-                            log.info("************************ 4th point in error **************************************");
-
-
+                            if(webCLientException.getStatusCode().isSameCodeAs(HttpStatusCode.valueOf(405))){
+                                errorCode =  HttpStatus.FORBIDDEN;//webCLientException.getStatusCode();
+                                errorMsg = webCLientException.getStatusText();
+                                return onError(exchange, String.valueOf(errorCode.value()) ,errorMsg, "Access Denied for this Request", errorCode);
+                            }
+                            else {
+                                errorCode =  HttpStatus.BAD_GATEWAY;//webCLientException.getStatusCode();
+                                errorMsg = webCLientException.getStatusText();
+                            }
                         } else {
-                            log.info("************************ 3rd point in error **************************************");
-
                             errorCode = HttpStatus.BAD_GATEWAY;
                             errorMsg = HttpStatus.BAD_GATEWAY.getReasonPhrase();
                         }
@@ -103,6 +106,19 @@ public class AuthPreFilter   implements GlobalFilter {
         }
 
         return chain.filter(exchange);
+    }
+    private boolean isPathAllowedForRoles(String path, String profile) {
+        if (profile.equalsIgnoreCase("ADMIN")) {
+            return true;
+        } else if (profile.equalsIgnoreCase("FE")) {
+            for(String fePath:fePaths){
+                if(path.contains(fePath)){
+                    return true;
+                }
+            }
+            return false;
+        }
+        return false;
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String errCode, String err, String errDetails, HttpStatus httpStatus) {
