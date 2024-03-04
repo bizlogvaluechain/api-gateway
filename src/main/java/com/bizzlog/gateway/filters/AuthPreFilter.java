@@ -5,12 +5,15 @@ import com.bizzlog.gateway.dto.ErrorResponseModel;
 import com.bizzlog.gateway.utils.SecurityConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.common.util.StringUtils;
+import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -23,6 +26,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -33,6 +37,9 @@ public class AuthPreFilter   implements GlobalFilter {
     private final WebClient.Builder webClientBuilder;
 
     private final List<String> fePaths=List.of("api/v1/auth","api/v1/users","api/v1/cos","api/v1/tcs");
+//    private final Map<String, Boolean> pathRestrictions = Map.of(
+//            "/api/v1/tcs", true
+//    );
 
     @Autowired
     @Qualifier("excludedUrls")
@@ -68,18 +75,14 @@ public class AuthPreFilter   implements GlobalFilter {
                     .retrieve()
                     .bodyToMono(UserResponse.class)
                     .map(response -> {
-                        log.info(response.toString());
-                        if (!isPathAllowedForRoles(requestPath, response.getProfile().getProfile())) {
-                            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                            throw new WebClientResponseException(HttpStatusCode.valueOf(405),"ACCESS FORBIDDEN FOR USER",null,null,null,null);
+                        if (!StringUtil.isNullOrEmpty(response.getProfile().getProfile())) {
+                            log.info(response.toString());
+                            if (!isPathAllowedForRoles(requestPath, response.getProfile().getProfile())) {
+                                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                                throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
+                            }
+                            exchange.getRequest().mutate().header("username", response.getUserName());
                         }
-                        exchange.getRequest().mutate().header("username", response.getUserName());
-//                        exchange.getRequest().mutate().header(SecurityConstants.ROLE, response.getRoles().stream().map(role->{
-//                            return role.getName();
-//                        }).toList().stream().collect(Collectors.joining(",")));
-
-//                            exchange.getRequest().mutate().header("authorities", response.getAuthorities().stream().map(Authorities::getAuthority).reduce("", (a, b) -> a + "," + b));
-//                            exchange.getRequest().mutate().header("auth-token", response.getToken());
                         return exchange;
                     }).flatMap(chain::filter).onErrorResume(error -> {
                         log.info("Error Happened");
@@ -107,8 +110,11 @@ public class AuthPreFilter   implements GlobalFilter {
 
         return chain.filter(exchange);
     }
+
+
     private boolean isPathAllowedForRoles(String path, String profile) {
-        if (profile.equalsIgnoreCase("ADMIN")) {
+        log.info("path: {} and profile: {}", path, profile);
+        if (profile.equalsIgnoreCase("ADMIN") || profile.equalsIgnoreCase("machine")) {
             return true;
         } else if (profile.equalsIgnoreCase("FE")) {
             for(String fePath:fePaths){
@@ -141,7 +147,7 @@ public class AuthPreFilter   implements GlobalFilter {
 
     private boolean isLoginOrRegistrationPath(String path) {
         // Define paths for login and registration APIs
-        return path.contains("/login") || path.contains("/register")||path.contains("/refreshToken");
+        return path.contains("/login") || path.contains("/machine-token")||path.contains("/refreshToken");
     }
 
     public Predicate<ServerHttpRequest> isSecured = request -> excludedUrls.stream().noneMatch(uri -> request.getURI().getPath().contains(uri));
