@@ -5,7 +5,6 @@ import com.bizzlog.gateway.dto.ErrorResponseModel;
 import com.bizzlog.gateway.utils.SecurityConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.common.util.StringUtils;
 import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.io.buffer.DataBufferFactory;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -26,7 +24,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -36,7 +33,7 @@ public class AuthPreFilter   implements GlobalFilter {
     @Autowired
     private final WebClient.Builder webClientBuilder;
 
-    private final List<String> fePaths=List.of("api/v1/auth","api/v1/users","api/v1/cos","api/v1/tcs");
+    private final List<String> fePaths=List.of("api/v1/auth","api/v1/users","api/v1/cos","api/v1/tcs","api/v1/config");
 //    private final Map<String, Boolean> pathRestrictions = Map.of(
 //            "/api/v1/tcs", true
 //    );
@@ -56,11 +53,10 @@ public class AuthPreFilter   implements GlobalFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        log.info("**************************************************************************");
         log.info("URL is - " + request.getURI().getPath());
         String bearerToken = request.getHeaders().getFirst(SecurityConstants.HEADER);
         log.info("Bearer Token: "+ bearerToken);
-        log.info("************************ Pre Filter **************************************");
+        log.info("Entering to Pre Filter");
 
         String requestPath = exchange.getRequest().getPath().toString();
         if (isLoginOrRegistrationPath(requestPath)) {
