@@ -1,5 +1,6 @@
 package com.bizzlog.gateway.client;
 
+import com.bizzlog.gateway.dto.OrgFeatureFlagsDTO;
 import com.bizzlog.gateway.dto.UserProfile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,4 +18,5 @@ public class UserResponse {
     private Long orgId;
     private Boolean status;
     private UserProfile profile;
+    private List<OrgFeatureFlagsDTO> featureFlags;
 }

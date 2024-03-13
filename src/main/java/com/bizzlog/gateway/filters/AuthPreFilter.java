@@ -2,6 +2,7 @@ package com.bizzlog.gateway.filters;
 
 import com.bizzlog.gateway.client.UserResponse;
 import com.bizzlog.gateway.dto.ErrorResponseModel;
+import com.bizzlog.gateway.dto.OrgFeatureFlagsDTO;
 import com.bizzlog.gateway.utils.SecurityConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,13 +18,16 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -33,11 +37,16 @@ public class AuthPreFilter   implements GlobalFilter {
     @Autowired
     private final WebClient.Builder webClientBuilder;
 
-    private final List<String> fePaths=List.of("api/v1/auth","api/v1/users","api/v1/cos","api/v1/tcs","api/v1/config");
+//    private final List<String> fePaths=List.of("api/v1/auth","api/v1/users","api/v1/cos","api/v1/tcs","api/v1/config");
 //    private final Map<String, Boolean> pathRestrictions = Map.of(
 //            "/api/v1/tcs", true
 //    );
 
+    private static final Map<String, List<String>> featureAPIsMapping = new HashMap<>();
+    static{
+        featureAPIsMapping.put("ticket-creation", List.of("tcs"));
+        featureAPIsMapping.put("zones", List.of("zones"));
+    }
     @Autowired
     @Qualifier("excludedUrls")
     List<String> excludedUrls;
@@ -71,9 +80,10 @@ public class AuthPreFilter   implements GlobalFilter {
                     .retrieve()
                     .bodyToMono(UserResponse.class)
                     .map(response -> {
-                        if (!StringUtil.isNullOrEmpty(response.getProfile().getProfile())) {
+                        if (!ObjectUtils.isEmpty(response)) {
                             log.info(response.toString());
-                            if (!isPathAllowedForRoles(requestPath, response.getProfile().getProfile())) {
+                           log.info("org features--> {}",response.getFeatureFlags());
+                            if (!isPathAllowedForRoles(requestPath, response.getFeatureFlags())) {
                                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                                 throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
                             }
@@ -108,19 +118,14 @@ public class AuthPreFilter   implements GlobalFilter {
     }
 
 
-    private boolean isPathAllowedForRoles(String path, String profile) {
-        log.info("path: {} and profile: {}", path, profile);
-        if (profile.equalsIgnoreCase("ADMIN") || profile.equalsIgnoreCase("machine")) {
-            return true;
-        } else if (profile.equalsIgnoreCase("FE")) {
-            for(String fePath:fePaths){
-                if(path.contains(fePath)){
-                    return true;
-                }
-            }
-            return false;
-        }
-        return false;
+    private boolean isPathAllowedForRoles(String path, List<OrgFeatureFlagsDTO> featureFlags) {
+        List<String> disabledFeatures=featureFlags.stream().filter(x ->!x.getEnabled()).map(OrgFeatureFlagsDTO::getFeature).toList();
+        log.info("path: {} and disabledFeatures: {}", path, disabledFeatures);
+        boolean ffStatus = disabledFeatures.stream()
+                .map(featureAPIsMapping::get)
+                .flatMap(List::stream)
+                .anyMatch(path::contains);
+        return !ffStatus;
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String errCode, String err, String errDetails, HttpStatus httpStatus) {
