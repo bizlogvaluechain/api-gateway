@@ -3,10 +3,10 @@ package com.bizzlog.gateway.filters;
 import com.bizzlog.gateway.client.UserResponse;
 import com.bizzlog.gateway.dto.ErrorResponseModel;
 import com.bizzlog.gateway.dto.OrgFeatureFlagsDTO;
+import com.bizzlog.gateway.dto.Privilege;
 import com.bizzlog.gateway.utils.SecurityConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -46,6 +46,11 @@ public class AuthPreFilter   implements GlobalFilter {
     static{
         featureAPIsMapping.put("ticket-creation", List.of("tcs"));
         featureAPIsMapping.put("zones", List.of("zones"));
+    }
+    private static final Map<String, List<String>> privilegesAPIsMapping = new HashMap<>();
+    static{
+        privilegesAPIsMapping.put("ticket-creation", List.of("tcs"));
+        privilegesAPIsMapping.put("zones", List.of("zones"));
     }
     @Autowired
     @Qualifier("excludedUrls")
@@ -127,6 +132,16 @@ public class AuthPreFilter   implements GlobalFilter {
                 .anyMatch(path::contains);
         return !ffStatus;
     }
+//    private boolean isPathAllowedForPrivileges(String path, List<Privilege> featureFlags) {
+//        List<String> privileges=featureFlags.stream().filter(x -> Boolean.parseBoolean(x.getPrivilege())).map(privilegesAPIsMapping::).toList();
+//        log.info("path: {} and disabledFeatures: {}", path, privileges);
+////        privileges.stream()
+////                .map(privilegesAPIsMapping::get)
+////                .flatMap(List::stream)
+////                .anyMatch(path::contains);
+//        boolean privilegesStatus = false;
+//        return privilegesStatus;
+//    }
 
     private Mono<Void> onError(ServerWebExchange exchange, String errCode, String err, String errDetails, HttpStatus httpStatus) {
         DataBufferFactory dataBufferFactory = exchange.getResponse().bufferFactory();
@@ -148,7 +163,7 @@ public class AuthPreFilter   implements GlobalFilter {
 
     private boolean isLoginOrRegistrationPath(String path) {
         // Define paths for login and registration APIs
-        return path.contains("/login") || path.contains("/machine-token")||path.contains("/refreshToken");
+        return path.contains("/login") || path.contains("/machine-token")||path.contains("/refreshToken")||path.contains("/forgot-password");
     }
 
     public Predicate<ServerHttpRequest> isSecured = request -> excludedUrls.stream().noneMatch(uri -> request.getURI().getPath().contains(uri));
