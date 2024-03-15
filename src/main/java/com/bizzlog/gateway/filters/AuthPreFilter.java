@@ -45,11 +45,16 @@ public class AuthPreFilter   implements GlobalFilter {
     static{
         featureAPIsMapping.put("ticket-creation", List.of("tcs"));
         featureAPIsMapping.put("zones", List.of("zones"));
-        methodPrivilegesMapping.put("write", List.of("POST,GET,PUT"));
-        methodPrivilegesMapping.put("delete", List.of("GET,DELETE"));
+        methodPrivilegesMapping.put("write", List.of("POST","GET","PUT"));
+        methodPrivilegesMapping.put("delete", List.of("GET","DELETE"));
         methodPrivilegesMapping.put("read", List.of("GET"));
-        methodPrivilegesMapping.put("all", List.of("POST,GET,PUT,DELETE"));
+        methodPrivilegesMapping.put("all", List.of("POST","GET","DELETE","PUT"));
         privilegesAPIsMapping.put("ticket-creation",List.of("tcs"));
+        privilegesAPIsMapping.put("role",List.of("role"));
+        privilegesAPIsMapping.put("privileges",List.of("auth/privileges"));
+        privilegesAPIsMapping.put("user",List.of("users"));
+        privilegesAPIsMapping.put("profile",List.of("profile"));
+        privilegesAPIsMapping.put("zones",List.of("zones"));
     }
     @Autowired
     @Qualifier("excludedUrls")
@@ -57,6 +62,7 @@ public class AuthPreFilter   implements GlobalFilter {
 
 
     private final ObjectMapper objectMapper;
+    private final List<String> defaultAllowedPaths=List.of("/api/v1/users/profile","/api/v1/cos/organization/","/feature-flag/org-features");
 
     public AuthPreFilter(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
         this.webClientBuilder = webClientBuilder;
@@ -70,7 +76,6 @@ public class AuthPreFilter   implements GlobalFilter {
         String bearerToken = request.getHeaders().getFirst(SecurityConstants.HEADER);
         log.info("Bearer Token: "+ bearerToken);
         log.info("Entering to Pre Filter");
-
         String requestPath = exchange.getRequest().getPath().toString();
         if (isLoginOrRegistrationPath(requestPath)) {
             return chain.filter(exchange);
@@ -87,13 +92,15 @@ public class AuthPreFilter   implements GlobalFilter {
                         if (!ObjectUtils.isEmpty(response)) {
                             log.info(response.toString());
                            log.info("org features--> {}",response.getFeatureFlags());
-                            if (!validateFeatures(requestPath, response.getFeatureFlags())) {
-                                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                                throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
-                            }
-                            if (!validatePrivileges(request, response.getProfile().getPrivileges())) {
-                                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                                throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
+                            if(!isDefaultAllowedRequest(request)){
+                                if (!validateFeatures(requestPath, response.getFeatureFlags())) {
+                                    exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                                    throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
+                                }
+                                if (!validatePrivileges(request, response.getProfile().getPrivileges())) {
+                                    exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                                    throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
+                                }
                             }
                             exchange.getRequest().mutate().header("username", response.getUserName());
                         }
@@ -140,13 +147,14 @@ public class AuthPreFilter   implements GlobalFilter {
         String requestMethod=request.getMethod().toString();
         String path=request.getURI().getPath();
 
-        log.info("path: {} and disabledFeatures: {}", path, privileges);
+        log.info("request method: {} path: {} and privileges: {} ",requestMethod, path, privileges);
         boolean privilegeStatus = privileges.stream()
                 .map(privilege -> {
                     String userPrivilege="";
-                    if(privilege.getPrivilege().split(".").length==2){
-                        userPrivilege= Arrays.stream(privilege.getPrivilege().split(".")).toList().get(0);
+                    if(privilege.getPrivilege().split("\\.").length==2){
+                        userPrivilege= Arrays.stream(privilege.getPrivilege().split("\\.")).toList().get(0);
                     }
+                    log.info("userPrivilege{}",userPrivilege);
                     return privilegesAPIsMapping.get(userPrivilege);
                 })
                 .flatMap(List::stream)
@@ -154,14 +162,21 @@ public class AuthPreFilter   implements GlobalFilter {
         boolean methodStatus = privileges.stream()
                 .map(privilege -> {
                     String method="";
-                    if(privilege.getPrivilege().split(".").length==2){
-                        method= Arrays.stream(privilege.getPrivilege().split(".")).toList().get(1);
-                    }
+                    if(privilege.getPrivilege().split("\\.").length==2){
+                        method= Arrays.stream(privilege.getPrivilege().split("\\.")).toList().get(1);
+                    };
+                    log.info("requested method{}",method);
                     return methodPrivilegesMapping.get(method);
                 })
                 .flatMap(List::stream)
                 .anyMatch(requestMethod::contains);
-        return !privilegeStatus&&!methodStatus;
+        return privilegeStatus&&methodStatus;
+    }
+
+    private boolean isDefaultAllowedRequest(ServerHttpRequest request){
+        boolean test=request.getMethod().toString().equals("POST");
+        return defaultAllowedPaths.stream()
+                .anyMatch(str -> request.getURI().getPath().contains(str))&&request.getMethod().toString().equals("GET")||test;
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String errCode, String err, String errDetails, HttpStatus httpStatus) {
