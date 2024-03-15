@@ -3,7 +3,6 @@ package com.bizzlog.gateway.filters;
 import com.bizzlog.gateway.client.UserResponse;
 import com.bizzlog.gateway.dto.ErrorResponseModel;
 import com.bizzlog.gateway.dto.OrgFeatureFlagsDTO;
-import com.bizzlog.gateway.dto.Privilege;
 import com.bizzlog.gateway.utils.SecurityConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,8 +54,6 @@ public class AuthPreFilter   implements GlobalFilter {
         methodPrivilegesMapping.put("all", List.of("POST,GET,UPDATE,DELETE"));
         privilegesAPIsMapping.put("user",List.of(""));
     }
-
-
     @Autowired
     @Qualifier("excludedUrls")
     List<String> excludedUrls;
@@ -173,7 +170,7 @@ public class AuthPreFilter   implements GlobalFilter {
 
     private boolean isLoginOrRegistrationPath(String path) {
         // Define paths for login and registration APIs
-        return path.contains("/login") || path.contains("/machine-token")||path.contains("/refreshToken");
+        return path.contains("/login") || path.contains("/machine-token")||path.contains("/refreshToken")||path.contains("/forgot-password");
     }
 
     public Predicate<ServerHttpRequest> isSecured = request -> excludedUrls.stream().noneMatch(uri -> request.getURI().getPath().contains(uri));
