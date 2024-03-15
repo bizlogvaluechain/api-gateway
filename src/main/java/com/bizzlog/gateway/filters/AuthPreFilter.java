@@ -3,10 +3,10 @@ package com.bizzlog.gateway.filters;
 import com.bizzlog.gateway.client.UserResponse;
 import com.bizzlog.gateway.dto.ErrorResponseModel;
 import com.bizzlog.gateway.dto.OrgFeatureFlagsDTO;
+import com.bizzlog.gateway.dto.Privilege;
 import com.bizzlog.gateway.utils.SecurityConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,10 +24,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -48,11 +45,11 @@ public class AuthPreFilter   implements GlobalFilter {
     static{
         featureAPIsMapping.put("ticket-creation", List.of("tcs"));
         featureAPIsMapping.put("zones", List.of("zones"));
-        methodPrivilegesMapping.put("create", List.of("POST,GET,UPDATE"));
-        methodPrivilegesMapping.put("delete", List.of("GET,UPDATE"));
+        methodPrivilegesMapping.put("write", List.of("POST,GET,PUT"));
+        methodPrivilegesMapping.put("delete", List.of("GET,DELETE"));
         methodPrivilegesMapping.put("read", List.of("GET"));
-        methodPrivilegesMapping.put("all", List.of("POST,GET,UPDATE,DELETE"));
-        privilegesAPIsMapping.put("user",List.of(""));
+        methodPrivilegesMapping.put("all", List.of("POST,GET,PUT,DELETE"));
+        privilegesAPIsMapping.put("ticket-creation",List.of("tcs"));
     }
     @Autowired
     @Qualifier("excludedUrls")
@@ -142,12 +139,29 @@ public class AuthPreFilter   implements GlobalFilter {
     private boolean validatePrivileges(ServerHttpRequest request,List<Privilege> privileges) {
         String requestMethod=request.getMethod().toString();
         String path=request.getURI().getPath();
-        log.info("path: {} and disabledFeatures: {}", path, disabledFeatures);
-        boolean ffStatus = disabledFeatures.stream()
-                .map(featureAPIsMapping::get)
+
+        log.info("path: {} and disabledFeatures: {}", path, privileges);
+        boolean privilegeStatus = privileges.stream()
+                .map(privilege -> {
+                    String userPrivilege="";
+                    if(privilege.getPrivilege().split(".").length==2){
+                        userPrivilege= Arrays.stream(privilege.getPrivilege().split(".")).toList().get(0);
+                    }
+                    return privilegesAPIsMapping.get(userPrivilege);
+                })
                 .flatMap(List::stream)
                 .anyMatch(path::contains);
-        return !ffStatus;
+        boolean methodStatus = privileges.stream()
+                .map(privilege -> {
+                    String method="";
+                    if(privilege.getPrivilege().split(".").length==2){
+                        method= Arrays.stream(privilege.getPrivilege().split(".")).toList().get(1);
+                    }
+                    return methodPrivilegesMapping.get(method);
+                })
+                .flatMap(List::stream)
+                .anyMatch(requestMethod::contains);
+        return !privilegeStatus&&!methodStatus;
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String errCode, String err, String errDetails, HttpStatus httpStatus) {
