@@ -3,6 +3,7 @@ package com.bizzlog.gateway.filters;
 import com.bizzlog.gateway.client.UserResponse;
 import com.bizzlog.gateway.dto.ErrorResponseModel;
 import com.bizzlog.gateway.dto.OrgFeatureFlagsDTO;
+import com.bizzlog.gateway.dto.Privilege;
 import com.bizzlog.gateway.utils.SecurityConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,10 +44,19 @@ public class AuthPreFilter   implements GlobalFilter {
 //    );
 
     private static final Map<String, List<String>> featureAPIsMapping = new HashMap<>();
+    private static final Map<String, List<String>> methodPrivilegesMapping = new HashMap<>();
+    private static final Map<String, List<String>> privilegesAPIsMapping = new HashMap<>();
     static{
         featureAPIsMapping.put("ticket-creation", List.of("tcs"));
         featureAPIsMapping.put("zones", List.of("zones"));
+        methodPrivilegesMapping.put("create", List.of("POST,GET,UPDATE"));
+        methodPrivilegesMapping.put("delete", List.of("GET,UPDATE"));
+        methodPrivilegesMapping.put("read", List.of("GET"));
+        methodPrivilegesMapping.put("all", List.of("POST,GET,UPDATE,DELETE"));
+        privilegesAPIsMapping.put("user",List.of(""));
     }
+
+
     @Autowired
     @Qualifier("excludedUrls")
     List<String> excludedUrls;
@@ -83,7 +93,11 @@ public class AuthPreFilter   implements GlobalFilter {
                         if (!ObjectUtils.isEmpty(response)) {
                             log.info(response.toString());
                            log.info("org features--> {}",response.getFeatureFlags());
-                            if (!isPathAllowedForRoles(requestPath, response.getFeatureFlags())) {
+                            if (!validateFeatures(requestPath, response.getFeatureFlags())) {
+                                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                                throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
+                            }
+                            if (!validatePrivileges(request, response.getProfile().getPrivileges())) {
                                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                                 throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
                             }
@@ -118,8 +132,19 @@ public class AuthPreFilter   implements GlobalFilter {
     }
 
 
-    private boolean isPathAllowedForRoles(String path, List<OrgFeatureFlagsDTO> featureFlags) {
+    private boolean validateFeatures(String path, List<OrgFeatureFlagsDTO> featureFlags) {
         List<String> disabledFeatures=featureFlags.stream().filter(x ->!x.getEnabled()).map(OrgFeatureFlagsDTO::getFeature).toList();
+        log.info("path: {} and disabledFeatures: {}", path, disabledFeatures);
+        boolean ffStatus = disabledFeatures.stream()
+                .map(featureAPIsMapping::get)
+                .flatMap(List::stream)
+                .anyMatch(path::contains);
+        return !ffStatus;
+    }
+
+    private boolean validatePrivileges(ServerHttpRequest request,List<Privilege> privileges) {
+        String requestMethod=request.getMethod().toString();
+        String path=request.getURI().getPath();
         log.info("path: {} and disabledFeatures: {}", path, disabledFeatures);
         boolean ffStatus = disabledFeatures.stream()
                 .map(featureAPIsMapping::get)
