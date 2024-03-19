@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: api-gateway
   cloud:
     gateway:
       routes:
@@ -17,11 +19,11 @@ spring:
         - id: mds-route
           uri: http://localhost:8082/
           predicates:
-            - Path=/api/v1/mds/**
+            - Path=/api/v1/mds/** , /v3/api-docs/mds
         - id: tcs-route
           uri: http://localhost:8083/
           predicates:
-            - Path=/api/v1/tcs/**
+            - Path=/api/v1/tcs/** , /v3/api-docs/tcs
         - id: ums-route
           uri: http://localhost:8085/
           predicates:
@@ -45,6 +47,9 @@ spring:
               - POST
               - PUT
               - DELETE
+    discovery:
+      enabled: true
+
   gateway:
     excludedURLsNew: /api/v1/validateToken
 
@@ -68,7 +73,6 @@ server:
 logging:
   level:
     root: "INFO"
-#security:
 #  authentication:
 #    excluded-paths:
 #      - /login
