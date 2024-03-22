@@ -3,7 +3,6 @@ package com.bizzlog.gateway.filters;
 import com.bizzlog.gateway.client.UserResponse;
 import com.bizzlog.gateway.dto.ErrorResponseModel;
 import com.bizzlog.gateway.dto.OrgFeatureFlagsDTO;
-import com.bizzlog.gateway.dto.Privilege;
 import com.bizzlog.gateway.utils.SecurityConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -92,7 +91,7 @@ public class AuthPreFilter   implements GlobalFilter {
                                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                                 throw new WebClientResponseException(HttpStatusCode.valueOf(405), "ACCESS FORBIDDEN FOR USER", null, null, null, null);
                             }
-                            exchange.getRequest().mutate().header("username", response.getUserName());
+                            exchange.getRequest().mutate().header("userId", response.getUserId());
                         }
                         return exchange;
                     }).flatMap(chain::filter).onErrorResume(error -> {
