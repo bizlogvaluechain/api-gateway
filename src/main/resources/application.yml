@@ -99,7 +99,7 @@ springdoc:
   swagger-ui:
     urls:
       - name: IAM
-        url: http://localhost:8081/v3/api-docs/iam
+        url: http://35.154.200.152:8081/v3/api-docs/iam
       - name: MDS
         url: http://localhost:8082/v3/api-docs/mds
       - name: TCS
