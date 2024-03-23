@@ -1,4 +1,8 @@
 spring:
+  security:
+    user:
+      name: admin
+      password: admin
   application:
     name: api-gateway
   cloud:
@@ -19,11 +23,11 @@ spring:
         - id: mds-route
           uri: http://localhost:8082/
           predicates:
-            - Path=/api/v1/mds/** , /mds/v3/api-docs
+            - Path=/api/v1/mds/**
         - id: tcs-route
           uri: http://localhost:8083/
           predicates:
-            - Path=/api/v1/tcs/** , /v3/api-docs/tcs
+            - Path=/api/v1/tcs/**
         - id: ums-route
           uri: http://localhost:8085/
           predicates:
@@ -36,6 +40,14 @@ spring:
           uri: http://localhost:8087/
           predicates:
             - Path=/api/v1/config/**
+        - id: notification-email-route
+          uri: http://localhost:8089/
+          predicates:
+            - Path=/api/email/**
+        - id: notification-sms-route
+          uri: http://localhost:8089/
+          predicates:
+            - Path=/api/alert
       globalcors:
         corsConfigurations:
           '[/**]':
