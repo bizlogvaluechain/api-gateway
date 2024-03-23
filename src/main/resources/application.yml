@@ -90,3 +90,4 @@ springdoc:
         url: http://localhost:8083/v3/api-docs/tcs
       - name: MDS
         url: http://localhost:8083/v3/api-docs/mds
+
