@@ -1,8 +1,8 @@
 spring:
-  security:
-    user:
-      name: admin
-      password: admin
+#  security:
+#    user:
+#      name: admin
+#      password: admin
   application:
     name: api-gateway
   cloud:
