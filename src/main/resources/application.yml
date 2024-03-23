@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: api-gateway
   cloud:
     gateway:
       routes:
@@ -17,11 +19,11 @@ spring:
         - id: mds-route
           uri: http://localhost:8082/
           predicates:
-            - Path=/api/v1/mds/**
+            - Path=/api/v1/mds/** , /mds/v3/api-docs
         - id: tcs-route
           uri: http://localhost:8083/
           predicates:
-            - Path=/api/v1/tcs/**
+            - Path=/api/v1/tcs/** , /v3/api-docs/tcs
         - id: ums-route
           uri: http://localhost:8085/
           predicates:
@@ -45,6 +47,9 @@ spring:
               - POST
               - PUT
               - DELETE
+    discovery:
+      enabled: true
+
   gateway:
     excludedURLsNew: /api/v1/validateToken
 
@@ -68,7 +73,6 @@ server:
 logging:
   level:
     root: "INFO"
-#security:
 #  authentication:
 #    excluded-paths:
 #      - /login
@@ -78,3 +82,26 @@ logging:
 #    accessKey: your-access-key
 #    secretKey: your-secret-key
 #    region: your-region
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: IAM
+        url: http://localhost:8081/v3/api-docs/iam
+      - name: MDS
+        url: http://localhost:8082/v3/api-docs/mds
+      - name: TCS
+        url: http://localhost:8083/v3/api-docs/tcs
+      - name: COS
+        url: http://localhost:8084/v3/api-docs/cos
+      - name: UMS
+        url: http://localhost:8085/v3/api-docs/ums
+      - name: TMS
+        url: http://localhost:8086/v3/api-docs/tms
+      - name: CONFIG
+        url: http://localhost:8087/v3/api-docs/config
+      - name: NOTIFY
+        url: http://localhost:8089/v3/api-docs/notification
+
+
+
