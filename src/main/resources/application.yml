@@ -86,9 +86,22 @@ logging:
 springdoc:
   swagger-ui:
     urls:
+      - name: IAM
+        url: http://localhost:8081/v3/api-docs/iam
+      - name: MDS
+        url: http://localhost:8082/v3/api-docs/mds
       - name: TCS
         url: http://localhost:8083/v3/api-docs/tcs
-      - name: MDS
-        url: http://localhost:8083/v3/api-docs/mds
+      - name: COS
+        url: http://localhost:8084/v3/api-docs/cos
+      - name: UMS
+        url: http://localhost:8085/v3/api-docs/ums
+      - name: TMS
+        url: http://localhost:8086/v3/api-docs/tms
+      - name: CONFIG
+        url: http://localhost:8087/v3/api-docs/config
+      - name: NOTIFY
+        url: http://localhost:8089/v3/api-docs/notification
+
 
 
